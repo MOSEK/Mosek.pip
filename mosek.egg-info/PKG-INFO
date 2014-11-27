@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: mosek
+Version: 7.0.0
+Summary: Mosek installer for Python
+Home-page: https://github.com/MOSEK/Mosek.pop
+Author: Mosek ApS
+Author-email: mosek@mosek.com
+License: zlib
+Description: Mosek installer for Python
+Platform: any
