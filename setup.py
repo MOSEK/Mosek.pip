@@ -1,8 +1,9 @@
-import platform,sys
+import platform,sys,re
 import os,os.path
 import httplib
 import types
 import shutil
+import subprocess
 
 class VersionError(Exception): pass
 class URLError(Exception): pass
@@ -113,13 +114,94 @@ else:
         for tmem in tf:            
             if tmem.isfile() and (tmem.name.startswith(pfx) or tmem.name == 'mosek/{0}/license.pdf'.format(mosekver)):
                 tf.extract(tmem,tgtpath)
+
+if not os.path.isdir(os.path.join(unpackdir,'python')):
+    if not os.path.isdir(os.path.join(unpackdir,'mosek')):
+        shutil.move(os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'python','2','mosek'),unpackdir)
 print("OK")
+
+
+######################
+# Figure out version info and lib names
+######################
+
+mskverstr = subprocess.check_output([os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'bin','mosek'),'-v']).split('\n')[0]
+o = re.match(r'MOSEK version ([0-9]+)\.([0-9]+)',mskverstr)
+if o is None:
+    sys.stdout.write('Failed to run MOSEK')
+    sys.exit(1)
+
+mskmajorver = int(o.group(1))
+mskminorver = int(o.group(2))
+
+if   pf == 'Windows':
+    if is_64bits:
+        moseklibs = [ 'mosek64_{0}_{1}.dll'.format(mskmajorver,mskminorver), 
+                      'mosekxx{0}_{1}.dll'.format(mskmajorver,mskminorver), 
+                      'libiomp5md.dll',
+                      'mosekscopt{0}_{1}.dll'.format(mskmajorver,mskminorver) ]
+    else:
+        moseklibs = [ 'mosek{0}_{1}.dll'.format(mskmajorver,mskminorver), 
+                      'mosekxx{0}_{1}.dll'.format(mskmajorver,mskminorver), 
+                      'libiomp5md.dll',
+                      'mosekscopt{0}_{1}.dll'.format(mskmajorver,mskminorver) ]
+elif pf == 'Linux':
+    if is_64bits:
+        moseklibs = [ 'libmosek64.so.{0}.{1}'.format(mskmajorver,mskminorver),
+                      'libiomp5.so', 
+                      'libmosekxx{0}_{1}.so'.format(mskmajorver,mskminorver),
+                      'libmosekscopt{0}_{1}.so'.format(mskmajorver,mskminorver)]
+    else:
+        moseklibs = [ 'libmosek.so.{0}.{1}'.format(mskmajorver,mskminorver), 
+                      'libiomp5.so', 
+                      'libmosekxx{0}_{1}.so'.format(mskmajorver,mskminorver),
+                      'libmosekscopt{0}_{1}.so'.format(mskmajorver,mskminorver)]
+elif pf == 'Darwin':
+    moseklibs     = [ 'libmosek64.{0}.{1}.dylib'.format(mskmajorver,mskminorver), 
+                      'libiomp5.dylib',
+                      'libmosekxx{0}_{1}.dylib'.format(mskmajorver,mskminorver),
+                      'libmosekscopt{0}_{1}.dylib'.format(mskmajorver,mskminorver) ]
+else:
+    raise VersionError("Unsupported platform {0}".format(pf))
+
+for lib in moseklibs:
+    if not os.path.isfile(os.path.join(unpackdir,'mosek',lib)):
+        shutil.move(os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'bin',lib),os.path.join(unpackdir,'mosek'))
 
 ######################
 # Call setup.py 
 ######################
 
-setupmod = types.ModuleType("MosekSetup")
-setupfilename = os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'python','2','setup.py')
-setupmod.__file__ = setupfilename
-execfile(setupfilename,setupmod.__dict__)
+#from distutils.core import setup
+#from distutils.command.install import INSTALL_SCHEMES
+#import distutils.cmd
+from setuptools import setup, find_packages
+import platform,sys
+import os,os.path
+
+major,minor,_,_,_ = sys.version_info
+if major != 2 or minor < 5:
+    print "Python 2.5+ required, got %d.%d" % (major,minor)
+
+setup( name='Mosek',
+       version      = '{0}.{1}'.format(mskmajorver,mskminorver),
+       packages     = [ 'mosek', 'mosek.fusion' ],
+       
+       package_data = { '' : moseklibs },
+       
+       install_requires = ['numpy>=1.0'], 
+
+       # Metadata
+       author       = 'Mosek ApS',
+       author_email = "support@mosek.com",
+       description  = 'Mosek/Python APIs',
+       long_description = 'Interface for MOSEK',
+       license      = "See license.pdf in the MOSEK distribution",
+       url          = 'http://www.mosek.com',
+       keywords     = 'mosek optimization',
+       )
+
+#setupmod = types.ModuleType("MosekSetup")
+#setupfilename = os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'python','2','setup.py')
+#setupmod.__file__ = setupfilename
+#execfile(setupfilename,setupmod.__dict__)
