@@ -78,16 +78,17 @@ try:
             print "OK"
         else:
             print "Not redownloading. Use {0}".format(pkgfilename)
-    else:
+    else: # download to local directory
         pkgfilename = os.path.join(unpackdir,pkgname)
-        c.request('GET',pkgpath)
-        r = c.getresponse()
-        if r.status != 200:
-            raise URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason))    
-        print "Fetching {0} -> {1} ".format(url,pkgfilename)
-        with open(pkgfilename,"wb") as f:
-            shutil.copyfileobj(r,f)
-        print "OK"
+        if not os.path.isfile(pkgfilename):
+            c.request('GET',pkgpath)
+            r = c.getresponse()
+            if r.status != 200:
+                raise URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason))    
+            print "Fetching {0} -> {1} ".format(url,pkgfilename)
+            with open(pkgfilename,"wb") as f:
+                shutil.copyfileobj(r,f)
+            print "OK"
 finally:
     c.close()
 
@@ -95,86 +96,101 @@ finally:
 # Unpack Mosek package
 ######################
 
+def getMosekVersion(tgtpath):
+    with open(os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'h','mosek.h')) as f:
+        mosekh = f.read()
+    major    = None
+    minor    = None
+    build    = None
+    revision = None
+    for o in re.finditer(r'#define MSK_VERSION_(MAJOR|MINOR|BUILD|REVISION)\s+([0-9]+)',mosekh):
+        if   o.group(1) == 'MAJOR':    major = int(o.group(2))
+        elif o.group(1) == 'MINOR':    minor = int(o.group(2))
+        elif o.group(1) == 'BUILD':    build = int(o.group(2))
+        elif o.group(1) == 'REVISION': revision = int(o.group(2))
+    assert major is not None and minor is not None and build is not None and revision is not None
+                                                    
+    return major,minor,build,revision
+
+
+# NOTE: It appears that the setup.py script is loaded twice during
+# setup. This means that downloading and unpacking may already have
+# happened one: If we see that the 'platform' directory has been
+# created, we skip all the unpacking steps.
+
 pfx = 'mosek/{0}/tools/platform/{1}/'.format(mosekver,pfname)
 tgtpath = os.path.join(unpackdir,"platform")
-try: os.makedirs(tgtpath)
-except OSError: pass
+if not os.path.isdir(tgtpath):
+    try: os.makedirs(tgtpath)
+    except OSError: pass
 
-print "Unpacking..."
-if os.path.splitext(pkgname)[-1] == '.zip':
-    import zipfile
-    with zipfile.ZipFile(pkgfilename) as zf:
-        for tmem in zf.infolist():
-            if tmem.filename.startswith(pfx) or tmem.filename == 'mosek/{0}/license.pdf'.format(mosekver):
-                zf.extract(tmem,tgtpath)
-else:    
-    import tarfile
+    print "Unpacking..."
+    if os.path.splitext(pkgname)[-1] == '.zip':
+        import zipfile
+        with zipfile.ZipFile(pkgfilename) as zf:
+            for tmem in zf.infolist():
+                if tmem.filename.startswith(pfx) or tmem.filename == 'mosek/{0}/license.pdf'.format(mosekver):
+                    zf.extract(tmem,tgtpath)
+    else:    
+        import tarfile
 
-    with tarfile.open(pkgfilename) as tf:
-        for tmem in tf:            
-            if tmem.isfile() and (tmem.name.startswith(pfx) or tmem.name == 'mosek/{0}/license.pdf'.format(mosekver)):
-                tf.extract(tmem,tgtpath)
+        with tarfile.open(pkgfilename) as tf:
+            for tmem in tf:            
+                if tmem.isfile() and (tmem.name.startswith(pfx) or tmem.name == 'mosek/{0}/license.pdf'.format(mosekver)):
+                    tf.extract(tmem,tgtpath)
 
-if not os.path.isdir(os.path.join(unpackdir,'python')):
-    if not os.path.isdir(os.path.join(unpackdir,'mosek')):
+    if not os.path.isdir(os.path.join(unpackdir,'python')):
         shutil.move(os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'python','2','mosek'),unpackdir)
-print("OK")
+    print("OK")
 
 
-######################
-# Figure out version info and lib names
-######################
+    ######################
+    # Figure out version info and lib names
+    ######################
 
-mskverstr = subprocess.check_output([os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'bin','mosek'),'-v']).split('\n')[0]
-o = re.match(r'MOSEK version ([0-9]+)\.([0-9]+)',mskverstr)
-if o is None:
-    sys.stdout.write('Failed to run MOSEK')
-    sys.exit(1)
+    mskmajorver, mskminorver,_,_ = getMosekVersion(tgtpath)
 
-mskmajorver = int(o.group(1))
-mskminorver = int(o.group(2))
-
-if   pf == 'Windows':
-    if is_64bits:
-        moseklibs = [ 'mosek64_{0}_{1}.dll'.format(mskmajorver,mskminorver), 
-                      'mosekxx{0}_{1}.dll'.format(mskmajorver,mskminorver), 
-                      'libiomp5md.dll',
-                      'mosekscopt{0}_{1}.dll'.format(mskmajorver,mskminorver) ]
+    if   pf == 'Windows':
+        if is_64bits:
+            moseklibs = [ 'mosek64_{0}_{1}.dll'.format(mskmajorver,mskminorver), 
+                          'mosekxx{0}_{1}.dll'.format(mskmajorver,mskminorver), 
+                          'libiomp5md.dll',
+                          'mosekscopt{0}_{1}.dll'.format(mskmajorver,mskminorver) ]
+        else:
+            moseklibs = [ 'mosek{0}_{1}.dll'.format(mskmajorver,mskminorver), 
+                          'mosekxx{0}_{1}.dll'.format(mskmajorver,mskminorver), 
+                          'libiomp5md.dll',
+                          'mosekscopt{0}_{1}.dll'.format(mskmajorver,mskminorver) ]
+    elif pf == 'Linux':
+        if is_64bits:
+            moseklibs = [ 'libmosek64.so.{0}.{1}'.format(mskmajorver,mskminorver),
+                          'libiomp5.so', 
+                          'libmosekxx{0}_{1}.so'.format(mskmajorver,mskminorver),
+                          'libmosekscopt{0}_{1}.so'.format(mskmajorver,mskminorver)]
+        else:
+            moseklibs = [ 'libmosek.so.{0}.{1}'.format(mskmajorver,mskminorver), 
+                          'libiomp5.so', 
+                          'libmosekxx{0}_{1}.so'.format(mskmajorver,mskminorver),
+                          'libmosekscopt{0}_{1}.so'.format(mskmajorver,mskminorver)]
+    elif pf == 'Darwin':
+        moseklibs     = [ 'libmosek64.{0}.{1}.dylib'.format(mskmajorver,mskminorver), 
+                          'libiomp5.dylib',
+                          'libmosekxx{0}_{1}.dylib'.format(mskmajorver,mskminorver),
+                          'libmosekscopt{0}_{1}.dylib'.format(mskmajorver,mskminorver) ]
     else:
-        moseklibs = [ 'mosek{0}_{1}.dll'.format(mskmajorver,mskminorver), 
-                      'mosekxx{0}_{1}.dll'.format(mskmajorver,mskminorver), 
-                      'libiomp5md.dll',
-                      'mosekscopt{0}_{1}.dll'.format(mskmajorver,mskminorver) ]
-elif pf == 'Linux':
-    if is_64bits:
-        moseklibs = [ 'libmosek64.so.{0}.{1}'.format(mskmajorver,mskminorver),
-                      'libiomp5.so', 
-                      'libmosekxx{0}_{1}.so'.format(mskmajorver,mskminorver),
-                      'libmosekscopt{0}_{1}.so'.format(mskmajorver,mskminorver)]
-    else:
-        moseklibs = [ 'libmosek.so.{0}.{1}'.format(mskmajorver,mskminorver), 
-                      'libiomp5.so', 
-                      'libmosekxx{0}_{1}.so'.format(mskmajorver,mskminorver),
-                      'libmosekscopt{0}_{1}.so'.format(mskmajorver,mskminorver)]
-elif pf == 'Darwin':
-    moseklibs     = [ 'libmosek64.{0}.{1}.dylib'.format(mskmajorver,mskminorver), 
-                      'libiomp5.dylib',
-                      'libmosekxx{0}_{1}.dylib'.format(mskmajorver,mskminorver),
-                      'libmosekscopt{0}_{1}.dylib'.format(mskmajorver,mskminorver) ]
-else:
-    raise VersionError("Unsupported platform {0}".format(pf))
+        raise VersionError("Unsupported platform {0}".format(pf))
 
-for lib in moseklibs:
-    if not os.path.isfile(os.path.join(unpackdir,'mosek',lib)):
+    for lib in moseklibs:
         shutil.move(os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'bin',lib),os.path.join(unpackdir,'mosek'))
+else:
+    mskmajorver, mskminorver,_,_ = getMosekVersion(tgtpath)
+
+
 
 ######################
 # Call setup.py 
 ######################
 
-#from distutils.core import setup
-#from distutils.command.install import INSTALL_SCHEMES
-#import distutils.cmd
 from setuptools import setup, find_packages
 import platform,sys
 import os,os.path
@@ -187,7 +203,7 @@ setup( name='Mosek',
        version      = '{0}.{1}'.format(mskmajorver,mskminorver),
        packages     = [ 'mosek', 'mosek.fusion' ],
        
-       package_data = { '' : moseklibs },
+       package_data = { '' : ['*.so','*.dll','*.dylib','libmosek*' ] },
        
        install_requires = ['numpy>=1.0'], 
 
@@ -200,8 +216,3 @@ setup( name='Mosek',
        url          = 'http://www.mosek.com',
        keywords     = 'mosek optimization',
        )
-
-#setupmod = types.ModuleType("MosekSetup")
-#setupfilename = os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'python','2','setup.py')
-#setupmod.__file__ = setupfilename
-#execfile(setupfilename,setupmod.__dict__)
