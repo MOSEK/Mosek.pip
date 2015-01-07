@@ -8,15 +8,15 @@ import subprocess
 class VersionError(Exception): pass
 class URLError(Exception): pass
 
+mosekver = '7'
 
 ######################
 # Platform setup
 ######################
 
 major,minor,_,_,_ = sys.version_info
-if major != 2 or minor < 5:
-    print "Python 2.5+ required, got %d.%d" % (major,minor)
-mosekver = '7'
+if (major != 2 or minor < 5) and major != 3:
+    print("Python 2.5+ required, got %d.%d" % (major,minor))
 
 is_64bits = sys.maxsize > 2**32
 pf        = platform.system()
@@ -71,13 +71,13 @@ try:
             c.request('GET',pkgpath)
             r = c.getresponse()
             if r.status != 200:
-                raise URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason))    
-            print "Fetching {0} -> {1}".format(url,pkgfilename)
+                raise(URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason)))
+            print("Fetching {0} -> {1}".format(url,pkgfilename))
             with open(pkgfilename,"wb") as f:
                 shutil.copyfileobj(r,f)
-            print "OK"
+            print("OK")
         else:
-            print "Not redownloading. Use {0}".format(pkgfilename)
+            print("Not redownloading. Use {0}".format(pkgfilename))
     else: # download to local directory
         pkgfilename = os.path.join(unpackdir,pkgname)
         if not os.path.isfile(pkgfilename):
@@ -85,10 +85,10 @@ try:
             r = c.getresponse()
             if r.status != 200:
                 raise URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason))    
-            print "Fetching {0} -> {1} ".format(url,pkgfilename)
+            print("Fetching {0} -> {1} ".format(url,pkgfilename))
             with open(pkgfilename,"wb") as f:
                 shutil.copyfileobj(r,f)
-            print "OK"
+            print("OK")
 finally:
     c.close()
 
@@ -124,7 +124,7 @@ if not os.path.isdir(tgtpath):
     try: os.makedirs(tgtpath)
     except OSError: pass
 
-    print "Unpacking..."
+    print("Unpacking...")
     if os.path.splitext(pkgname)[-1] == '.zip':
         import zipfile
         with zipfile.ZipFile(pkgfilename) as zf:
@@ -140,7 +140,7 @@ if not os.path.isdir(tgtpath):
                     tf.extract(tmem,tgtpath)
 
     if not os.path.isdir(os.path.join(unpackdir,'python')):
-        shutil.move(os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'python','2','mosek'),unpackdir)
+        shutil.move(os.path.join(tgtpath,'mosek',mosekver,'tools','platform',pfname,'python',str(major),'mosek'),unpackdir)
     print("OK")
 
 
@@ -195,17 +195,13 @@ from setuptools import setup, find_packages
 import platform,sys
 import os,os.path
 
-major,minor,_,_,_ = sys.version_info
-if major != 2 or minor < 5:
-    print "Python 2.5+ required, got %d.%d" % (major,minor)
-
 setup( name='Mosek',
        version      = '{0}.{1}'.format(mskmajorver,mskminorver),
        packages     = [ 'mosek', 'mosek.fusion' ],
        
        package_data = { '' : ['*.so','*.dll','*.dylib','libmosek*' ] },
        
-       install_requires = ['numpy>=1.0'], 
+       install_requires = ['numpy>=1.4','python>=2.5'], 
 
        # Metadata
        author       = 'Mosek ApS',
