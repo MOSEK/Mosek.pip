@@ -1,6 +1,5 @@
 import platform,sys,re
 import os,os.path
-import httplib
 import types
 import shutil
 import subprocess
@@ -55,7 +54,13 @@ unpackdir   = os.path.abspath(os.path.dirname(__file__))
 # Get mosek package
 ######################
 
+try:
+    import httplib
+except ImportError:
+    import http.client as httplib
+
 c = httplib.HTTPConnection('download.mosek.com')
+
 try:
     url = "http://download.mosek.com"+pkgpath
 
@@ -64,7 +69,7 @@ try:
         r = c.getresponse()
         if r.status != 200:
             raise URLError("Failed to fetch MOSEK package '{0}.sha512'. Response {1} ({2})".format(url,r.status,r.reason))    
-        sha512 = r.read()[:128]
+        sha512 = r.read()[:128].decode()
                 
         pkgfilename = os.path.join(dldir,sha512+'_'+pkgname)
         if not os.path.exists(pkgfilename):
@@ -195,14 +200,17 @@ from setuptools import setup, find_packages
 import platform,sys
 import os,os.path
 
+if major == 3:
+    packages = [ 'mosek' ]
+else:
+    packages = [ 'mosek','mosek.fusion' ]
+
+
 setup( name='Mosek',
        version      = '{0}.{1}'.format(mskmajorver,mskminorver),
-       packages     = [ 'mosek', 'mosek.fusion' ],
-       
+       packages     = packages,
        package_data = { '' : ['*.so','*.dll','*.dylib','libmosek*' ] },
-       
-       install_requires = ['numpy>=1.4','python>=2.5'], 
-
+       install_requires = ['numpy>=1.4' ], 
        # Metadata
        author       = 'Mosek ApS',
        author_email = "support@mosek.com",
