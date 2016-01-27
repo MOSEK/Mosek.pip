@@ -1,9 +1,11 @@
 import setuptools.command.install
-import setuptools.command.build_py
+#import setuptools.command.build_py
+import distutils.command.build
+from setuptools import setup
 import platform,sys
 #import re
 import os,os.path
-#import shutil
+import shutil
 
 class VersionError(Exception): pass
 class URLError(Exception): pass
@@ -70,8 +72,8 @@ if dldir is not None and not os.path.isdir(dldir):
     dldir = None
 
 pkgpath     = '/stable/{0}/{1}'.format(mosekmajorver,pkgname)
-unpackdir   = os.path.abspath(os.path.dirname(__file__))
-distroplatformpfx = 'mosek/{0}/tools/platform/{1}/'.format(mosekmajorver,pfname)
+unpackdir   = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)),'src'))
+distroplatformpfx = 'mosek/{0}/tools/platform/{1}'.format(mosekmajorver,pfname)
 
 ######################
 # Get mosek package
@@ -122,32 +124,29 @@ def _pre_install():
     finally:
         c.close()
 
-    libdir = os.path.join(unpackdir,'lib',pfname)
-    try: os.makedirs(libdir)
-    except OSError: pass
 
-    licencepdf = 'mosek/{0}/license.pdf'.format(mosekver):
+    licensepdf = 'mosek/{0}/license.pdf'.format(mosekmajorver)
+    pypfx = '{0}/python/{1}/mosek'.format(distroplatformpfx,major)
+
     if os.path.splitext(pkgname)[-1] == '.zip':
         import zipfile
         with zipfile.ZipFile(pkgfilename) as zf:
             for tmem in zf.infolist():
-                if tmem.filename.startswith(pfx):
-                    zf.extract(tmem,tgtpath)
+                if tmem.filename.startswith(pypfx):
+                    zf.extract(tmem,os.path.dirname(tmem.filename[len(pypfx):]))
                 elif os.path.basename(tmem.filename) in moseklibs:
-                    zf.extract(tmem,libdir)
+                    zf.extract(tmem,unpackdir)
                 elif tmem.filename == licensepdf:
-                    zf.extract(tmem,libdir)
+                    zf.extract(tmem,unpackdir)
     else:
         import tarfile
 
         with tarfile.open(pkgfilename) as tf:
             for tmem in tf:
-                if tmem.isfile() and (tmem.name.startswith(pfx):
-                    tf.extract(tmem,tgtpath)
-                elif os.path.basename(tmem.filename) in moseklibs:
-                    tf.extract(tmem,libdir)
-                elif tmem.filename == licensepdf:
-                    tf.extract(tmem,libdir)
+                if (tmem.isfile() and (tmem.name.startswith(pypfx))) or \
+                   os.path.basename(tmem.name) in moseklibs or \
+                   tmem.name == licensepdf:
+                    tf.extract(tmem,unpackdir)
 
 def _post_install(sitedir):
     """
@@ -158,22 +157,30 @@ def _post_install(sitedir):
     try: os.makedirs(tgtpath)
     except OSError: pass
 
-    with open(os.path.join(sitedir,'mosek','mosekorigin.py'),encoding='ascii') as f:
+    libsrcdir = os.path.join(unpackdir,'mosek',mosekmajorver,'tools','platform',pfname,'bin')
+    for l in moseklibs:
+        shutil.copyfile(os.path.join(libsrcdir,l),os.path.join(tgtpath,l))
+
+    with open(os.path.join(sitedir,'mosek','mosekorigin.py'),'wt') as f:
         f.write('__mosekinstpath__ = """{0}"""\n'.format(os.path.join(sitedir,'mosek')))
 
 class install(setuptools.command.install.install):
     def run(self):
+        #self.execute(_pre_install,
+        #             (),
+        #             msg="Fetch MOSEK distro")
         setuptools.command.install.install.run(self)
         self.execute(_post_install,
                      (self.install_lib,),
                      msg="Install binary libraries")
 
-class build_py(setuptools.command.build_py.build_py):
+#class build_py(setuptools.command.build_py.build_py):
+class build(distutils.command.build.build):
     def run(self):
         self.execute(_pre_install,
                      (),
                      msg="Fetch MOSEK distro")
-        setuptools.command.install.install.run(self)
+        distutils.command.build.build.run(self)
 
 if major == 3:
     packages = [ 'mosek' ]
@@ -181,13 +188,12 @@ else:
     packages = [ 'mosek','mosek.fusion' ]
 
 setup( name='Mosek',
-       cmdclass     = { 'install' : install,
-                        'build'     build},
-       version      = '{0}.{1}'.format(mskmajorver,mskminorver),
+       cmdclass     = { 'install'  : install,
+                        'build'    : build },
+       version      = '{0}.{1}'.format(mosekmajorver,mosekminorver),
        packages     = packages,
-       #package_data = { '' : ['*.so','*.dll','*.dylib','libmosek*' ] },
+       package_dir   = { 'mosek'        : os.path.join('src','mosek',mosekmajorver,'tools','platform',pfname,'python',str(major),'mosek') },
        install_requires = ['numpy>=1.4' ],
-       # Metadata
        author       = 'Mosek ApS',
        author_email = "support@mosek.com",
        description  = 'Mosek/Python APIs',
