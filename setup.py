@@ -1,9 +1,19 @@
+# NOTE to whoever happens to look in this file: I had to cheat to get
+# the installer to work with PIP. The 'egg_info' is the first command
+# that PIP runs, so I have extended it with some actions that download
+# MOSEK and unpacks it, so it exists when the real egg_info command is
+# executed.
+#
+# The 'install' is then extended with actions that install the
+# necessary binary libraries.
+#
+# If you know a better/more official way to do all this, please open
+# an Issue.
+
 import setuptools.command.install
-#import setuptools.command.build_py
-import distutils.command.build
-from setuptools import setup
+import setuptools.command.egg_info
+from   setuptools import setup
 import platform,sys
-#import re
 import os,os.path
 import shutil
 
@@ -124,7 +134,6 @@ def _pre_install():
     finally:
         c.close()
 
-
     licensepdf = 'mosek/{0}/license.pdf'.format(mosekmajorver)
     pypfx = '{0}/python/{1}/mosek'.format(distroplatformpfx,major)
 
@@ -164,35 +173,27 @@ def _post_install(sitedir):
     with open(os.path.join(sitedir,'mosek','mosekorigin.py'),'wt') as f:
         f.write('__mosekinstpath__ = """{0}"""\n'.format(os.path.join(sitedir,'mosek')))
 
-class install(setuptools.command.install.install):
+class mod_egg_info(setuptools.command.egg_info.egg_info):
     def run(self):
-        #self.execute(_pre_install,
-        #             (),
-        #             msg="Fetch MOSEK distro")
+        self.execute(_pre_install, (), msg="Fetch MOSEK distro")
+        setuptools.command.egg_info.egg_info.run(self)
+
+
+class add_postinstall(setuptools.command.install.install):
+    def run(self):
         setuptools.command.install.install.run(self)
         self.execute(_post_install,
                      (self.install_lib,),
                      msg="Install binary libraries")
 
-#class build_py(setuptools.command.build_py.build_py):
-class build(distutils.command.build.build):
-    def run(self):
-        self.execute(_pre_install,
-                     (),
-                     msg="Fetch MOSEK distro")
-        distutils.command.build.build.run(self)
-
-if major == 3:
-    packages = [ 'mosek' ]
-else:
-    packages = [ 'mosek','mosek.fusion' ]
+packages = [ 'mosek','mosek.fusion' ]
 
 setup( name='Mosek',
-       cmdclass     = { 'install'  : install,
-                        'build'    : build },
+       cmdclass     = { 'egg_info'  : mod_egg_info,
+                        'install'   : add_postinstall },
        version      = '{0}.{1}'.format(mosekmajorver,mosekminorver),
        packages     = packages,
-       package_dir   = { 'mosek'        : os.path.join('src','mosek',mosekmajorver,'tools','platform',pfname,'python',str(major),'mosek') },
+       package_dir  = { 'mosek'        : os.path.join('src','mosek',mosekmajorver,'tools','platform',pfname,'python',str(major),'mosek') },
        install_requires = ['numpy>=1.4' ],
        author       = 'Mosek ApS',
        author_email = "support@mosek.com",
@@ -200,5 +201,4 @@ setup( name='Mosek',
        long_description = 'Interface for MOSEK',
        license      = "See license.pdf in the MOSEK distribution",
        url          = 'http://www.mosek.com',
-       keywords     = 'mosek optimization',
        )
