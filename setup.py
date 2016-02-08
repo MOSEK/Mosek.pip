@@ -1,3 +1,4 @@
+mosekver = 7,1,0,100
 # NOTE to whoever happens to look in this file: I had to cheat to get
 # the installer to work with PIP. The 'egg_info' is the first command
 # that PIP runs, so I have extended it with some actions that download
@@ -20,8 +21,8 @@ import shutil
 class VersionError(Exception): pass
 class URLError(Exception): pass
 
-mosekmajorver = '7'
-mosekminorver = '1'
+mosekmajorver = str(mosekver[0])
+mosekminorver = str(mosekver[1])
 
 ######################
 # Platform setup
