@@ -1,10 +1,27 @@
 Metadata-Version: 1.0
 Name: mosek
-Version: 7.0.0
+Version: 7.1.45
 Summary: Mosek installer for Python
 Home-page: https://github.com/MOSEK/Mosek.pip
 Author: Mosek ApS
 Author-email: mosek@mosek.com
-License: zlib
-Description: Mosek installer for Python
-Platform: any
+License: zlib+proprietary
+Description: Mosek installer for Python. This package will download an install MOSEK for Python. The downloaded distribution is under a proprietary license. 
+
+Platform: Windows
+Platform: Linux
+Platform: Mac OS-X
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Topic :: Scientific/Engineering
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: Posix :: Linux
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Topic :: Scientific/Engineering

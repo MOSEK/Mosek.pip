@@ -1,18 +1,11 @@
-mosekver = 7,1,0,100
-# NOTE to whoever happens to look in this file: I had to cheat to get
-# the installer to work with PIP. The 'egg_info' is the first command
-# that PIP runs, so I have extended it with some actions that download
-# MOSEK and unpacks it, so it exists when the real egg_info command is
-# executed.
-#
-# The 'install' is then extended with actions that install the
-# necessary binary libraries.
-#
-# If you know a better/more official way to do all this, please open
-# an Issue.
+# NOTE to whoever happens to look in this file: I had to cheat a bit
+# to get the installer to work with PIP. Since the 'build' action
+# effectively builds both python source and binary libraries (by
+# downloading and unpacking the binary distribution)
 
 import setuptools.command.install
 import setuptools.command.egg_info
+import distutils.command.build
 from   setuptools import setup
 import platform,sys
 import os,os.path
@@ -21,12 +14,19 @@ import shutil
 class VersionError(Exception): pass
 class URLError(Exception): pass
 
-mosekmajorver = str(mosekver[0])
-mosekminorver = str(mosekver[1])
+with open(os.path.join(os.path.dirname('__file__'),'PKG-INFO'),'rt') as f:
+    for l in f:
+        if l.startswith('Version:'):
+            mosekver = l[len('Version:'):].strip().split('.')
+            break
+
+mosekmajorver = mosekver[0]
+mosekminorver =  mosekver[1]
 
 ######################
 # Platform setup
 ######################
+
 
 major,minor,_,_,_ = sys.version_info
 if (major != 2 or minor < 5) and (major != 3 or minor < 3):
@@ -82,7 +82,7 @@ else:
 if dldir is not None and not os.path.isdir(dldir):
     dldir = None
 
-pkgpath     = '/stable/{0}/{1}'.format(mosekmajorver,pkgname)
+pkgpath     = '/stable/{0}.{1}.0.{2}/{3}'.format(mosekver[0],mosekver[1],mosekver[2],pkgname)
 unpackdir   = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)),'src'))
 distroplatformpfx = 'mosek/{0}/tools/platform/{1}'.format(mosekmajorver,pfname)
 
@@ -94,46 +94,32 @@ def _pre_install():
     """
     Fetch MOSEK distribution and unpack the python module structure
     """
-    try:
-        # python 2
-        import httplib
-    except ImportError:
-        # python 3
-        import http.client as httplib
-
     # Download the newest distro
-    c = httplib.HTTPConnection('download.mosek.com')
-    try:
-        url = "http://download.mosek.com"+pkgpath
+    if dldir is not None:
+        pkgfilename = os.path.join(dldir,'Mosek-{0}.{1}.{2}-'.format(*mosekver)+pkgname)
+    else: # download to local directory
+        pkgfilename = os.path.join(unpackdir,pkgname)
 
-        if dldir is not None:
-            c.request('GET',pkgpath+'.sha512')
+    if not os.path.exists(pkgfilename):
+        try:
+            # python 2
+            import httplib
+        except ImportError:
+            # python 3
+            import http.client as httplib
+
+        c = httplib.HTTPConnection('download.mosek.com')
+        try:
+            url = "http://download.mosek.com"+pkgpath
+
+            c.request('GET',pkgpath)
             r = c.getresponse()
             if r.status != 200:
-                raise URLError("Failed to fetch MOSEK package '{0}.sha512'. Response {1} ({2})".format(url,r.status,r.reason))
-            sha512 = r.read()[:128].decode()
-
-            pkgfilename = os.path.join(dldir,sha512+'_'+pkgname)
-            if not os.path.exists(pkgfilename):
-                c.request('GET',pkgpath)
-                r = c.getresponse()
-                if r.status != 200:
-                    raise(URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason)))
-                with open(pkgfilename,"wb") as f:
-                    shutil.copyfileobj(r,f)
-            else:
-                pass
-        else: # download to local directory
-            pkgfilename = os.path.join(unpackdir,pkgname)
-            if not os.path.isfile(pkgfilename):
-                c.request('GET',pkgpath)
-                r = c.getresponse()
-                if r.status != 200:
-                    raise URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason))
-                with open(pkgfilename,"wb") as f:
-                    shutil.copyfileobj(r,f)
-    finally:
-        c.close()
+                raise URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason))
+            with open(pkgfilename,"wb") as f:
+                shutil.copyfileobj(r,f)
+        finally:
+            c.close()
 
     licensepdf = 'mosek/{0}/license.pdf'.format(mosekmajorver)
     pypfx = '{0}/python/{1}/mosek'.format(distroplatformpfx,major)
@@ -174,13 +160,30 @@ def _post_install(sitedir):
     with open(os.path.join(sitedir,'mosek','mosekorigin.py'),'wt') as f:
         f.write('__mosekinstpath__ = """{0}"""\n'.format(os.path.join(sitedir,'mosek')))
 
-class mod_egg_info(setuptools.command.egg_info.egg_info):
+    # Copy python modules
+    try:
+        shutil.rmtree(os.path.join(sitedir,'mosek'))
+    except:
+        pass
+    shutil.copytree(os.path.join('src','mosek',mosekmajorver,'tools','platform',pfname,'python',str(major),'mosek'),
+                    os.path.join(sitedir,'mosek'))
+    shutil.copy(os.path.join('src','mosek',mosekmajorver,'license.pdf'),
+                os.path.join(sitedir,'mosek'))
+    print("""
+*** MOSEK for Python ***
+Please read through the MOSEK software license before using MOSEK:
+     {0}
+To use MOSEK for optimization a license file is required. Free
+academic licenses, commercial trial licenses and full licenses can be
+obtained at http://mosek.com.
+""".format(os.path.join(sitedir,'mosek','license.pdf')))
+
+class build(distutils.command.build.build):
     def run(self):
-        self.execute(_pre_install, (), msg="Fetch MOSEK distro")
-        setuptools.command.egg_info.egg_info.run(self)
+        self.execute(_pre_install,(), msg="Fetch and unpack MOSEK distro")
+        distutils.command.build.build.run(self)
 
-
-class add_postinstall(setuptools.command.install.install):
+class install(setuptools.command.install.install):
     def run(self):
         setuptools.command.install.install.run(self)
         self.execute(_post_install,
@@ -190,11 +193,11 @@ class add_postinstall(setuptools.command.install.install):
 packages = [ 'mosek','mosek.fusion' ]
 
 setup( name='Mosek',
-       cmdclass     = { 'egg_info'  : mod_egg_info,
-                        'install'   : add_postinstall },
-       version      = '{0}.{1}'.format(mosekmajorver,mosekminorver),
-       packages     = packages,
-       package_dir  = { 'mosek'        : os.path.join('src','mosek',mosekmajorver,'tools','platform',pfname,'python',str(major),'mosek') },
+       cmdclass     = { 'build'   : build,
+                        'install' : install },
+       version      = '{0}.{1}.{2}'.format(mosekmajorver,mosekminorver,mosekver[2]),
+       #packages     = packages,
+       #package_dir  = { 'mosek'        : os.path.join('src','mosek',mosekmajorver,'tools','platform',pfname,'python',str(major),'mosek') },
        install_requires = ['numpy>=1.4' ],
        author       = 'Mosek ApS',
        author_email = "support@mosek.com",

@@ -1,8 +1,0 @@
-LICENSE
-setup.py
-mosek.egg-info/SOURCES.txt
-mosek.egg-info/PKG-INFO
-PKG-INFO
-README.md
-requirements.txt
-setup.py
