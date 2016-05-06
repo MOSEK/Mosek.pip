@@ -1,6 +1,6 @@
-Metadata-Version: 7.1.51
+Metadata-Version: 7.1.52
 Name: mosek
-Version: 7.1.51
+Version: 7.1.52
 Summary: Mosek installer for Python
 Home-page: https://github.com/MOSEK/Mosek.pip
 Author: Mosek ApS
