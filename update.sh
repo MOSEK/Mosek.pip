@@ -2,7 +2,7 @@
 
 
 STATE=stable
-MAJORVER=8.0
+MAJORVER=8
 
 # Latest MOSEK distro version
 MOSEKVER=$(curl -s  http://download.mosek.com/$STATE/$MAJORVER/version)
