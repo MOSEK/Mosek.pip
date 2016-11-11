@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-STATE=beta
+STATE=stable
 MAJORVER=8.0
 
 # Latest MOSEK distro version
