@@ -17,18 +17,16 @@ class URLError(Exception): pass
 
 with open(os.path.join(os.path.dirname('__file__'),'PKG-INFO'),'rt') as f:
     data = f.read()
-    regex = re.compile(r'^Version:\s*([0-9]+)\.([0-9])+(?:\.([0-9]+))?(?:([ab])?([0-9]+))',re.MULTILINE)
+    regex = re.compile(r'^Version:\s*([0-9]+)\.([0-9]+)\.(?:([ab])?([0-9]+))',re.MULTILINE)
     o = regex.search(data)
     if o is not None:
         mosekmajorver = o.group(1)
         mosekminorver = o.group(2)
-        mosekrevision = o.group(3)
-        letter        = o.group(4)
-        abrevision    = o.group(5)
+        letter        = o.group(3)
+        mosekrevision = o.group(4)
         state         = 'stable'
 
         if letter is not None:
-            mosekrevision = abrevision
             if   letter == 'a':
                 state = 'alpha'
             elif letter == 'b':
