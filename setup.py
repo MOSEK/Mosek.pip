@@ -131,26 +131,30 @@ def _pre_install():
     else: # download to local directory
         pkgfilename = os.path.join(unpackdir,pkgname)
 
+        
+    
     if not os.path.exists(pkgfilename):
+        url = "http://download.mosek.com" + pkgpath
+
         try:
             # python 2
             import httplib
+             c = httplib.HTTPConnection('download.mosek.com')
+            try:
+                c.request('GET',pkgpath)
+                r = c.getresponse()
+                if r.status != 200:
+                    raise URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason))
+                with open(pkgfilename,"wb") as f:
+                    shutil.copyfileobj(r,f)
+            finally:
+                c.close()
+
         except ImportError:
             # python 3
-            import http.client as httplib
+            import urllib.request
+            urllib.request.urlretrieve(url, pkgfilename)
 
-        c = httplib.HTTPConnection('download.mosek.com')
-        try:
-            url = "http://download.mosek.com"+pkgpath
-
-            c.request('GET',pkgpath)
-            r = c.getresponse()
-            if r.status != 200:
-                raise URLError("Failed to fetch MOSEK package '{0}'. Response {1} ({2})".format(url,r.status,r.reason))
-            with open(pkgfilename,"wb") as f:
-                shutil.copyfileobj(r,f)
-        finally:
-            c.close()
 
     licensepdf = '/'.join(licensepdfd[mskverkey])
     pypfx = '{0}/python/{1}/mosek'.format(distroplatformpfx,major)
