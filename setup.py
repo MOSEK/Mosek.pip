@@ -139,7 +139,7 @@ def _pre_install():
         try:
             # python 2
             import httplib
-             c = httplib.HTTPConnection('download.mosek.com')
+            c = httplib.HTTPConnection('download.mosek.com')
             try:
                 c.request('GET',pkgpath)
                 r = c.getresponse()
