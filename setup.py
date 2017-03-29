@@ -58,7 +58,7 @@ libs = {
     'osx64x86' : {
         '7.0' : [ 'libmosek64.7.0.dylib', 'libmosekxx7_0.dylib', 'libmosekscopt7_0.dylib','libiomp5.dylib' ],
         '7.1' : [ 'libmosek64.7.1.dylib', 'libmosekxx7_1.dylib', 'libmosekscopt7_1.dylib','libiomp5.dylib' ],
-        '8.0' : [ 'libmosek64.8.0.dylib', 'libmosekxx8_0.dylib', 'libmosekscopt8_0.dylib','libiomp5.dylib','libcilkrts.5.dylib' ] },
+        '8.0' : [ 'libmosek64.8.0.dylib', 'libmosekxx8_0.dylib', 'libmosekscopt8_0.dylib','libcilkrts.5.dylib' ] },
 }
 
 licensepdfd = {
