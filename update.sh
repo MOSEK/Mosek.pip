@@ -14,14 +14,14 @@ MSKREV=$(echo $MOSEKVER | sed 's/\([0-9]\+\.[0-9]\+\).[0-9]\+\.\([0-9]\+\)/\2/g'
 PKGVER=$(grep '^Version:' PKG-INFO |sed 's/Version: \([0-9]\+\.[0-9]\+\)[ab.]\([0-9]\+\)/\1.\2/g')
 PKGREV=$(grep '^Version:' PKG-INFO |sed 's/Version: \([0-9]\+\.[0-9]\+\)[ab.]\([0-9]\+\)/\2/g')
 
-
+echo $MSKREV, $PKGREV
 if (( $MSKREV > $PKGREV )); then
     case "$STATE" in
         alpha) NEWPKGVER="${MSKMAJMINVER}a$MSKREV" ;;
         beta) NEWPKGVER="${MSKMAJMINVER}b$MSKREV" ;;
         *) NEWPKGVER="${MSKMAJMINVER}.$MSKREV" ;;
     esac
-
+    
     mv PKG-INFO PKG-INFO.backup && \
     sed "s/^Version: .*/Version: $NEWPKGVER/g" < PKG-INFO.backup > PKG-INFO && \
     rm PKG-INFO.backup && \
