@@ -28,7 +28,7 @@ if (( $MSKREV > $PKGREV )); then
     git add PKG-INFO && \
     git commit -m "update version to $NEWPKGVER" && \
     git tag "v$NEWPKGVER" && \
-    git push origin master "v$NEWPKGVER" || exit 1
+    git push refs/tags/"v$NEWPKGVER" || exit 1
 else
     echo Package version is already up-to-date
 fi
