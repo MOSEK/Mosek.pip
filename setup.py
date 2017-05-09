@@ -44,14 +44,17 @@ libs = {
         '7.0' : [ 'mosek64_7_0.dll','mosekxx7_0.dll', 'mosekscopt7_0.dll', 'libiomp5md.dll' ],
         '7.1' : [ 'mosek64_7_1.dll','mosekxx7_1.dll', 'mosekscopt7_1.dll', 'libiomp5md.dll' ],
         '8.0' : [ 'mosek64_8_0.dll','mosekxx8_0.dll', 'mosekscopt8_0.dll', 'libiomp5md.dll','cilkrts20.dll' ] },
+        '8.1' : [ 'mosek64_8_1.dll','mosekxx8_1.dll', 'mosekscopt8_1.dll', 'libiomp5md.dll','cilkrts20.dll' ] },
     'win34x86' : {
         '7.0' : [ 'mosek7_0.dll','mosekxx7_0.dll', 'mosekscopt7_0.dll', 'libiomp5md.dll' ],
         '7.1' : [ 'mosek7_1.dll','mosekxx7_1.dll', 'mosekscopt7_1.dll', 'libiomp5md.dll' ],
         '8.0' : [ 'mosek8_0.dll','mosekxx8_0.dll', 'mosekscopt8_0.dll', 'libiomp5md.dll','cilkrts20.dll' ], },
+        '8.1' : [ 'mosek8_1.dll','mosekxx8_1.dll', 'mosekscopt8_1.dll', 'libiomp5md.dll','cilkrts20.dll' ], },
     'linux64x86' : {
         '7.0' : [ 'libmosek64.so.7.0', 'libmosekxx7_0.so', 'libmosekscopt7_0.so','libiomp5.so' ],
         '7.1' : [ 'libmosek64.so.7.1', 'libmosekxx7_1.so', 'libmosekscopt7_1.so','libiomp5.so' ],
         '8.0' : [ 'libmosek64.so.8.0', 'libmosekxx8_0.so', 'libmosekscopt8_0.so','libiomp5.so','libcilkrts.so.5' ] },
+        '8.1' : [ 'libmosek64.so.8.1', 'libmosekxx8.1.so', 'libmosekscopt8.1.so','libiomp5.so','libcilkrts.so.5' ] },
     'linux32x86' : {
         '7.0' : [ 'libmosek.so.7.0', 'libmosekxx7_0.so', 'libmosekscopt7_0.so','libiomp5.so' ],
         '7.1' : [ 'libmosek.so.7.1', 'libmosekxx7_1.so', 'libmosekscopt7_1.so','libiomp5.so' ] },
@@ -59,6 +62,7 @@ libs = {
         '7.0' : [ 'libmosek64.7.0.dylib', 'libmosekxx7_0.dylib', 'libmosekscopt7_0.dylib','libiomp5.dylib' ],
         '7.1' : [ 'libmosek64.7.1.dylib', 'libmosekxx7_1.dylib', 'libmosekscopt7_1.dylib','libiomp5.dylib' ],
         '8.0' : [ 'libmosek64.8.0.dylib', 'libmosekxx8_0.dylib', 'libmosekscopt8_0.dylib','libcilkrts.5.dylib' ] },
+        '8.1' : [ 'libmosek64.8.1.dylib', 'libmosekxx8.1.dylib', 'libmosekscopt8.1.dylib','libcilkrts.5.dylib' ] },
 }
 
 licensepdfd = {
