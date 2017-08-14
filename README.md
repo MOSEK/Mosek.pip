@@ -16,4 +16,4 @@ pip install --user https://github.com/MOSEK/Mosek.pip/archive/7.1.45.tar.gz
 
 The links can be used with both Python 2 and 3.
 
-If you are installing using Miniconda or PyEnv, you should leave out the `--user` argument.
+If you are installing using Miniconda, PyEnv or another locally installed Python, you should leave out the `--user` argument.
