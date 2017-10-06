@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: mosek
-Version: 8.0.73
+Version: 8.1.27
 Summary: Mosek installer for Python
 Home-page: https://github.com/MOSEK/Mosek.pip
 Author: Mosek ApS
@@ -19,6 +19,7 @@ Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.3
 Classifier: Programming Language :: Python :: 3.4
 Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
 Classifier: Topic :: Scientific/Engineering
 Classifier: Operating System :: Microsoft :: Windows
 Classifier: Operating System :: Posix :: Linux
