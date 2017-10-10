@@ -143,10 +143,6 @@ pkgnames = {
     'osx64x86': 'mosektoolsosx64x86.tar.bz2'
 }
 
-mskverkey = '{0}.{1}'.format(mosekmajorver, mosekminorver)
-
-major, minor, _, _, _ = sys.version_info
-
 is_64bits = platform.architecture()[0] == '64bit'
 pf = platform.system()
 
@@ -157,21 +153,29 @@ if pf == 'Windows':
     else:
         pfname = "win32x86"
         pkgname = 'mosektoolswin32x86.zip'
+    dldir = os.environ.get('TEMP')
 elif pf == 'Linux':
     if is_64bits:
         pfname = "linux64x86"
     else:
         pfname = "linux32x86"
         pkgname = 'mosektoolslinux32x86.tar.bz2'
+    dldir = '{0}/Downloads'.format(
+        os.environ['HOME'])  # appears to be standart
 elif pf == 'Darwin':
     pfname = "osx64x86"
     pkgname = 'mosektoolsosx64x86.tar.bz2'
+    dldir = '{0}/Downloads'.format(os.environ['HOME'])
 else:
     raise VersionError("Unsupported platform {0}".format(pf))
 
 pkgname = pkgnames[pfname]
+mskverkey = '{0}.{1}'.format(mosekmajorver, mosekminorver)
 moseklibs = libs[pfname][mskverkey]
 moseklibs = set(moseklibs)
+
+if dldir is not None and not os.path.isdir(dldir):
+    dldir = None
 
 pkgpath = '/{state}/{0}.{1}.0.{2}/{3}'.format(
     mosekmajorver, mosekminorver, mosekrevision, pkgname, state=state)
@@ -190,10 +194,12 @@ def _pre_install():
     Fetch MOSEK distribution and unpack the python module structure
     """
     # Download the newest distro
-    pkgfilename = os.path.join(unpackdir, pkgname)
+    if dldir is not None:
+        pkgfilename = os.path.join(dldir, 'Mosek-{0}.{1}.{2}-'.format(
+            mosekmajorver, mosekminorver, mosekrevision) + pkgname)
+    else:  # download to local directory
+        pkgfilename = os.path.join(unpackdir, pkgname)
 
-        
-    
     if not os.path.exists(pkgfilename):
         url = "http://download.mosek.com" + pkgpath
 
