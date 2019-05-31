@@ -3,3 +3,9 @@
 ```
 pip install -f http://download.mosek.com/stable/wheel/index.html Mosek
 ```
+
+Or, using Anaconda, install as 
+
+```
+conda install -c mosek mosek
+```
